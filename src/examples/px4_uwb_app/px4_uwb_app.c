@@ -42,8 +42,6 @@
 
 __EXPORT int px4_uwb_app_main(int argc, char *argv[]);
 
-/*static const char * pMarcinPointer = "This shall be visible in elf Marcinbawolski";*/
-
 int px4_uwb_app_main(int argc, char *argv[])
 {
     PX4_INFO("Hello Sky on UWB for distance measurements MarcinBawolski !");
