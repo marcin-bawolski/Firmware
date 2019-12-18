@@ -31,10 +31,10 @@
 #
 ############################################################################
 px4_add_module(
-    MODULE examples__px4_uwb_app
-    MAIN px4_uwb_app
+    MODULE examples__uwb_rng
+    MAIN uwb_rng
     STACK_MAIN 2000
     SRCS
-        px4_uwb_app.c
+        uwb_rng.c
     DEPENDS
     )

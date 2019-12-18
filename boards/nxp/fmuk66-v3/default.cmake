@@ -1,4 +1,3 @@
-
 px4_add_board(
 	PLATFORM nuttx
 	VENDOR nxp
@@ -116,7 +115,7 @@ px4_add_board(
 		#matlab_csv_serial
 		px4_mavlink_debug # Tutorial code from http://dev.px4.io/en/debug/debug_values.html
 		px4_simple_app # Tutorial code from http://dev.px4.io/en/apps/hello_sky.html
-		px4_uwb_app
+		uwb_rng 
 		rover_steering_control # Rover example app
 		uuv_example_app
 	)

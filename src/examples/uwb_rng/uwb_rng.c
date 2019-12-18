@@ -40,9 +40,9 @@
 
 #include <px4_log.h>
 
-__EXPORT int px4_uwb_app_main(int argc, char *argv[]);
+__EXPORT int uwb_rng_main(int argc, char *argv[]);
 
-int px4_uwb_app_main(int argc, char *argv[])
+int uwb_rng_main(int argc, char *argv[])
 {
     PX4_INFO("Hello Sky on UWB for distance measurements MarcinBawolski !");
     return OK;
