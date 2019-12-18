@@ -33,9 +33,9 @@
 
 #pragma once
 
-#include <px4_module.h>
-#include <px4_module_params.h>
-#include <px4_posix.h>
+#include <px4_platform_common/module.h>
+#include <px4_platform_common/module_params.h>
+#include <px4_platform_common/posix.h>
 
 #include <matrix/matrix/math.hpp>   // matrix, vectors, dcm, quaterions
 #include <conversion/rotation.h>    // math::radians,
@@ -46,9 +46,13 @@
 #include <lib/drivers/gyroscope/PX4Gyroscope.hpp>
 #include <lib/drivers/magnetometer/PX4Magnetometer.hpp>
 #include <perf/perf_counter.h>
+#include <uORB/Publication.hpp>
+#include <uORB/Subscription.hpp>
 #include <uORB/topics/parameter_update.h>
-#include <uORB/topics/vehicle_global_position.h>    // to publish groundtruth
+#include <uORB/topics/actuator_outputs.h>
+#include <uORB/topics/vehicle_angular_velocity.h>   // to publish groundtruth
 #include <uORB/topics/vehicle_attitude.h>           // to publish groundtruth
+#include <uORB/topics/vehicle_global_position.h>    // to publish groundtruth
 #include <uORB/topics/vehicle_gps_position.h>
 
 extern "C" __EXPORT int sih_main(int argc, char *argv[]);
@@ -75,9 +79,6 @@ public:
 	/** @see ModuleBase::run() */
 	void run() override;
 
-	/** @see ModuleBase::print_status() */
-	int print_status() override;
-
 	static float generate_wgn();    // generate white Gaussian noise sample
 
 	// generate white Gaussian noise sample as a 3D vector with specified std
@@ -103,17 +104,23 @@ private:
 	PX4Barometer _px4_baro{ 6620172, ORB_PRIO_DEFAULT }; // 6620172: DRV_BARO_DEVTYPE_BAROSIM, BUS: 1, ADDR: 4, TYPE: SIMULATION
 
 	// to publish the gps position
-	struct vehicle_gps_position_s   _vehicle_gps_pos {};
-	orb_advert_t                    _vehicle_gps_pos_pub{nullptr};
-	// attitude groundtruth
-	struct vehicle_global_position_s    _gpos_gt {};
-	orb_advert_t                        _gpos_gt_sub{nullptr};
-	// global position groundtruth
-	struct vehicle_attitude_s           _att_gt {};
-	orb_advert_t                        _att_gt_sub{nullptr};
+	vehicle_gps_position_s				_vehicle_gps_pos{};
+	uORB::Publication<vehicle_gps_position_s>	_vehicle_gps_pos_pub{ORB_ID(vehicle_gps_position)};
 
-	int _parameter_update_sub {-1};
-	int _actuator_out_sub {-1};
+	// angular velocity groundtruth
+	vehicle_angular_velocity_s			_vehicle_angular_velocity_gt{};
+	uORB::Publication<vehicle_angular_velocity_s>	_vehicle_angular_velocity_gt_pub{ORB_ID(vehicle_angular_velocity_groundtruth)};
+
+	// attitude groundtruth
+	vehicle_attitude_s				_att_gt{};
+	uORB::Publication<vehicle_attitude_s>		_att_gt_pub{ORB_ID(vehicle_attitude_groundtruth)};
+
+	// global position groundtruth
+	vehicle_global_position_s			_gpos_gt{};
+	uORB::Publication<vehicle_global_position_s>	_gpos_gt_pub{ORB_ID(vehicle_global_position_groundtruth)};
+
+	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};
+	uORB::Subscription _actuator_out_sub{ORB_ID(actuator_outputs)};
 
 	// hard constants
 	static constexpr uint16_t NB_MOTORS = 4;

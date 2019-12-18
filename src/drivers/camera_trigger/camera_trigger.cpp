@@ -50,7 +50,7 @@
 #include <poll.h>
 #include <mathlib/mathlib.h>
 #include <matrix/math.hpp>
-#include <px4_work_queue/ScheduledWorkItem.hpp>
+#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <systemlib/err.h>
 #include <parameters/param.h>
 #include <systemlib/mavlink_log.h>
@@ -103,7 +103,7 @@ public:
 	/**
 	 * Destructor, also kills task.
 	 */
-	~CameraTrigger();
+	~CameraTrigger() override;
 
 	/**
 	 * Run intervalometer update
@@ -133,7 +133,7 @@ public:
 	/**
 	 * Start the task.
 	 */
-	void		start();
+	bool		start();
 
 	/**
 	 * Stop the task.
@@ -233,7 +233,7 @@ CameraTrigger	*g_camera_trigger;
 }
 
 CameraTrigger::CameraTrigger() :
-	ScheduledWorkItem(px4::wq_configurations::lp_default),
+	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::lp_default),
 	_engagecall {},
 	_disengagecall {},
 	_engage_turn_on_off_call {},
@@ -329,7 +329,9 @@ CameraTrigger::CameraTrigger() :
 
 CameraTrigger::~CameraTrigger()
 {
-	delete (_camera_interface);
+	if (_camera_interface != nullptr) {
+		delete (_camera_interface);
+	}
 
 	camera_trigger::g_camera_trigger = nullptr;
 }
@@ -427,9 +429,19 @@ CameraTrigger::shoot_once()
 	}
 }
 
-void
+bool
 CameraTrigger::start()
 {
+	if (_camera_interface == nullptr) {
+		if (camera_trigger::g_camera_trigger != nullptr) {
+			delete (camera_trigger::g_camera_trigger);
+			camera_trigger::g_camera_trigger = nullptr;
+
+		}
+
+		return false;
+	}
+
 	if ((_trigger_mode == TRIGGER_MODE_INTERVAL_ALWAYS_ON ||
 	     _trigger_mode == TRIGGER_MODE_DISTANCE_ALWAYS_ON) &&
 	    _camera_interface->has_power_control() &&
@@ -456,6 +468,8 @@ CameraTrigger::start()
 
 	// start to monitor at high rate for trigger enable command
 	ScheduleNow();
+
+	return true;
 }
 
 void
@@ -472,6 +486,7 @@ CameraTrigger::stop()
 
 	if (camera_trigger::g_camera_trigger != nullptr) {
 		delete (camera_trigger::g_camera_trigger);
+		camera_trigger::g_camera_trigger = nullptr;
 	}
 }
 
@@ -701,7 +716,7 @@ CameraTrigger::Run()
 void
 CameraTrigger::engage(void *arg)
 {
-	CameraTrigger *trig = reinterpret_cast<CameraTrigger *>(arg);
+	CameraTrigger *trig = static_cast<CameraTrigger *>(arg);
 
 	// Trigger the camera
 	trig->_camera_interface->trigger(true);
@@ -740,7 +755,7 @@ CameraTrigger::engage(void *arg)
 void
 CameraTrigger::disengage(void *arg)
 {
-	CameraTrigger *trig = reinterpret_cast<CameraTrigger *>(arg);
+	CameraTrigger *trig = static_cast<CameraTrigger *>(arg);
 
 	trig->_camera_interface->trigger(false);
 }
@@ -748,7 +763,7 @@ CameraTrigger::disengage(void *arg)
 void
 CameraTrigger::engange_turn_on_off(void *arg)
 {
-	CameraTrigger *trig = reinterpret_cast<CameraTrigger *>(arg);
+	CameraTrigger *trig = static_cast<CameraTrigger *>(arg);
 
 	trig->_camera_interface->send_toggle_power(true);
 }
@@ -756,7 +771,7 @@ CameraTrigger::engange_turn_on_off(void *arg)
 void
 CameraTrigger::disengage_turn_on_off(void *arg)
 {
-	CameraTrigger *trig = reinterpret_cast<CameraTrigger *>(arg);
+	CameraTrigger *trig = static_cast<CameraTrigger *>(arg);
 
 	trig->_camera_interface->send_toggle_power(false);
 }
@@ -764,7 +779,7 @@ CameraTrigger::disengage_turn_on_off(void *arg)
 void
 CameraTrigger::keep_alive_up(void *arg)
 {
-	CameraTrigger *trig = reinterpret_cast<CameraTrigger *>(arg);
+	CameraTrigger *trig = static_cast<CameraTrigger *>(arg);
 
 	trig->_camera_interface->send_keep_alive(true);
 }
@@ -772,7 +787,7 @@ CameraTrigger::keep_alive_up(void *arg)
 void
 CameraTrigger::keep_alive_down(void *arg)
 {
-	CameraTrigger *trig = reinterpret_cast<CameraTrigger *>(arg);
+	CameraTrigger *trig = static_cast<CameraTrigger *>(arg);
 
 	trig->_camera_interface->send_keep_alive(false);
 }
@@ -827,7 +842,11 @@ int camera_trigger_main(int argc, char *argv[])
 			return 1;
 		}
 
-		camera_trigger::g_camera_trigger->start();
+		if (!camera_trigger::g_camera_trigger->start()) {
+			PX4_WARN("failed to start camera trigger");
+			return 1;
+		}
+
 		return 0;
 	}
 

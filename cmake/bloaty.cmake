@@ -33,38 +33,12 @@
 
 find_program(BLOATY_PROGRAM bloaty)
 if (BLOATY_PROGRAM)
-	# bloaty symbols
-	set(BLOATY_OPTS --demangle=short --domain=vm -s vm -n 100 -w)
-	add_custom_target(bloaty_symbols
-		COMMAND ${BLOATY_PROGRAM} -d symbols ${BLOATY_OPTS} $<TARGET_FILE:px4>
-		DEPENDS px4
-		USES_TERMINAL
-		)
+
+	set(BLOATY_OPTS --demangle=full --domain=vm -s vm -n 200 -w)
 
 	# bloaty compilation units
 	add_custom_target(bloaty_compileunits
 		COMMAND ${BLOATY_PROGRAM} -d compileunits ${BLOATY_OPTS} $<TARGET_FILE:px4>
-		DEPENDS px4
-		USES_TERMINAL
-		)
-
-	# bloaty sections
-	add_custom_target(bloaty_sections
-		COMMAND ${BLOATY_PROGRAM} -d sections ${BLOATY_OPTS} $<TARGET_FILE:px4>
-		DEPENDS px4
-		USES_TERMINAL
-		)
-
-	# bloaty segments
-	add_custom_target(bloaty_segments
-		COMMAND ${BLOATY_PROGRAM} -d segments ${BLOATY_OPTS} $<TARGET_FILE:px4>
-		DEPENDS px4
-		USES_TERMINAL
-		)
-
-	# bloaty templates
-	add_custom_target(bloaty_templates
-		COMMAND ${BLOATY_PROGRAM} -d shortsymbols,fullsymbols ${BLOATY_OPTS} $<TARGET_FILE:px4>
 		DEPENDS px4
 		USES_TERMINAL
 		)
@@ -76,10 +50,31 @@ if (BLOATY_PROGRAM)
 		USES_TERMINAL
 		)
 
+	# bloaty segments,sections
+	add_custom_target(bloaty_segments
+		COMMAND ${BLOATY_PROGRAM} -d segments,sections ${BLOATY_OPTS} $<TARGET_FILE:px4>
+		DEPENDS px4
+		USES_TERMINAL
+		)
+
+	# bloaty symbols
+	add_custom_target(bloaty_symbols
+		COMMAND ${BLOATY_PROGRAM} -d symbols ${BLOATY_OPTS} $<TARGET_FILE:px4>
+		DEPENDS px4
+		USES_TERMINAL
+		)
+
+	# bloaty templates
+	add_custom_target(bloaty_templates
+		COMMAND ${BLOATY_PROGRAM} -d shortsymbols,fullsymbols ${BLOATY_OPTS} $<TARGET_FILE:px4>
+		DEPENDS px4
+		USES_TERMINAL
+		)
+
 	# bloaty compare with last master build
 	add_custom_target(bloaty_compare_master
 		COMMAND wget -c -N --no-verbose https://s3.amazonaws.com/px4-travis/Firmware/master/${PX4_BOARD_VENDOR}_${PX4_BOARD_MODEL}_${PX4_BOARD_LABEL}.elf -O master.elf
-		COMMAND ${BLOATY_PROGRAM} ${BLOATY_OPTS} $<TARGET_FILE:px4> -- master.elf
+		COMMAND ${BLOATY_PROGRAM} -d symbols ${BLOATY_OPTS} $<TARGET_FILE:px4> -- master.elf
 		DEPENDS px4
 		WORKING_DIRECTORY ${PX4_BINARY_DIR}
 		VERBATIM
